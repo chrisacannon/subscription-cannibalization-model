@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subscription Cannibalization Model — HP Ink Supplies</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #08090d;
+  --bg-mid: #0e1018;
+  --bg-light: #161820;
+  --bg-card: #111318;
+  --gold: #c9a84c;
+  --gold-light: #e0c070;
+  --gold-dim: rgba(201,168,76,0.12);
+  --white: #eeeae2;
+  --white-dim: rgba(238,234,226,0.58);
+  --white-faint: rgba(238,234,226,0.09);
+  --border: rgba(201,168,76,0.16);
+  --border-faint: rgba(238,234,226,0.08);
+  --green: #5a9e72;
+  --green-dim: rgba(90,158,114,0.15);
+  --red: #c26060;
+  --red-dim: rgba(194,96,96,0.15);
+  --amber: #d4884a;
+  --amber-dim: rgba(212,136,74,0.15);
+  --blue: #4e8faa;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--white);font-family:'Outfit',sans-serif;font-weight:300;line-height:1.7;overflow-x:hidden;}
+
+/* grain */
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.032'/%3E%3C/svg%3E");pointer-events:none;z-index:999;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 3.5rem;height:68px;background:rgba(8,9,13,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+.nav-logo{font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-weight:500;letter-spacing:0.07em;color:var(--gold);text-transform:uppercase;}
+.nav-links{display:flex;gap:2.5rem;list-style:none;}
+.nav-links a{font-family:'DM Mono',monospace;font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--white-dim);text-decoration:none;transition:color 0.2s;}
+.nav-links a:hover,.nav-links a.active{color:var(--gold);}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:120px 3.5rem 80px;position:relative;overflow:hidden;max-width:1200px;margin:0 auto;}
+.hero-eyebrow{font-family:'DM Mono',monospace;font-size:0.68rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:1.4rem;opacity:0;animation:fadeUp 0.7s ease 0.1s forwards;}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.8rem,5.5vw,5rem);font-weight:300;line-height:1.08;max-width:820px;margin-bottom:2rem;opacity:0;animation:fadeUp 0.7s ease 0.3s forwards;}
+.hero-title em{font-style:italic;color:var(--gold-light);}
+.hero-rule{width:72px;height:1px;background:var(--gold);margin-bottom:2rem;opacity:0;animation:fadeUp 0.7s ease 0.5s forwards;}
+.hero-desc{max-width:560px;font-size:0.95rem;color:var(--white-dim);line-height:1.85;opacity:0;animation:fadeUp 0.7s ease 0.65s forwards;}
+.hero-nav{display:flex;gap:1.2rem;margin-top:3rem;flex-wrap:wrap;opacity:0;animation:fadeUp 0.7s ease 0.8s forwards;}
+.hero-btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.7rem 1.5rem;font-family:'DM Mono',monospace;font-size:0.68rem;letter-spacing:0.13em;text-transform:uppercase;text-decoration:none;transition:all 0.22s;}
+.hero-btn-primary{background:var(--gold);color:var(--bg);}
+.hero-btn-primary:hover{background:var(--gold-light);transform:translateY(-2px);}
+.hero-btn-outline{border:1px solid var(--border);color:var(--white-dim);}
+.hero-btn-outline:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-2px);}
+
+/* DISCLOSURE */
+.disclosure-bar{background:rgba(201,168,76,0.06);border:1px solid var(--border);padding:0.85rem 1.5rem;max-width:1200px;margin:0 auto 0;font-family:'DM Mono',monospace;font-size:0.65rem;color:rgba(238,234,226,0.35);letter-spacing:0.04em;line-height:1.7;}
+
+/* SECTIONS */
+.section{padding:5rem 3.5rem;max-width:1200px;margin:0 auto;}
+.section-eyebrow{font-family:'DM Mono',monospace;font-size:0.66rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:0.8rem;}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,3vw,2.6rem);font-weight:300;line-height:1.18;margin-bottom:1.2rem;}
+.section-lead{font-size:0.92rem;color:var(--white-dim);max-width:620px;line-height:1.85;margin-bottom:3rem;}
+
+/* TENSION CARDS */
+.tension-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:3rem;}
+.tension-card{background:var(--bg-card);padding:2.2rem;}
+.tension-label{font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:1rem;}
+.tension-label.sub{color:var(--blue);}
+.tension-label.trans{color:var(--amber);}
+.tension-title{font-size:0.95rem;font-weight:500;margin-bottom:0.75rem;}
+.tension-body{font-size:0.82rem;color:var(--white-dim);line-height:1.75;}
+.tension-metric{margin-top:1.2rem;display:flex;gap:1.5rem;}
+.t-metric-val{font-family:'DM Mono',monospace;font-size:1.1rem;}
+.t-metric-val.pos{color:var(--green);}
+.t-metric-val.neg{color:var(--red);}
+.t-metric-label{font-size:0.72rem;color:var(--white-dim);margin-top:0.1rem;}
+
+/* MATRIX */
+.matrix-wrap{background:var(--bg-card);border:1px solid var(--border);padding:2rem;margin-bottom:2rem;}
+.matrix-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;}
+.matrix-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400;}
+.matrix-subtitle{font-size:0.78rem;color:var(--white-dim);margin-top:0.2rem;}
+.matrix-controls{display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;}
+.matrix-toggle{font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.35rem 0.9rem;border:1px solid var(--border);background:transparent;color:var(--white-dim);cursor:pointer;transition:all 0.18s;}
+.matrix-toggle.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+.matrix-toggle:hover{border-color:var(--gold);color:var(--gold);}
+
+.matrix-outer{display:flex;gap:1rem;}
+.matrix-y-label{writing-mode:vertical-rl;transform:rotate(180deg);font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--white-dim);display:flex;align-items:center;justify-content:center;padding:0.5rem 0;}
+.matrix-inner{flex:1;}
+.matrix-x-label{text-align:center;font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--white-dim);margin-bottom:0.5rem;}
+.matrix-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;}
+.matrix-axis-row{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;margin-top:4px;}
+.axis-tick{font-family:'DM Mono',monospace;font-size:0.58rem;color:rgba(238,234,226,0.3);text-align:center;}
+
+.matrix-cell{aspect-ratio:1;border-radius:1px;cursor:pointer;position:relative;transition:transform 0.12s, box-shadow 0.12s;display:flex;align-items:center;justify-content:center;}
+.matrix-cell:hover{transform:scale(1.15);z-index:10;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+.matrix-cell.selected{transform:scale(1.18);z-index:11;box-shadow:0 0 0 2px var(--gold), 0 4px 20px rgba(0,0,0,0.5);}
+
+/* cell legend */
+.matrix-legend{display:flex;gap:1.5rem;margin-top:1rem;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:0.5rem;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--white-dim);}
+.legend-swatch{width:12px;height:12px;border-radius:1px;}
+
+/* CELL DETAIL PANEL */
+.cell-detail{background:var(--bg-light);border:1px solid var(--border);padding:1.8rem;margin-top:1rem;display:none;}
+.cell-detail.visible{display:block;}
+.detail-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem;margin-top:1rem;}
+.detail-stat-val{font-family:'DM Mono',monospace;font-size:1.1rem;margin-bottom:0.2rem;}
+.detail-stat-val.pos{color:var(--green);}
+.detail-stat-val.neg{color:var(--red);}
+.detail-stat-val.warn{color:var(--amber);}
+.detail-stat-label{font-size:0.72rem;color:var(--white-dim);}
+.detail-rec{margin-top:1.2rem;padding:0.85rem 1rem;font-size:0.8rem;line-height:1.65;}
+.detail-rec.good{background:var(--green-dim);border-left:3px solid var(--green);color:var(--white-dim);}
+.detail-rec.marginal{background:var(--amber-dim);border-left:3px solid var(--amber);color:var(--white-dim);}
+.detail-rec.poor{background:var(--red-dim);border-left:3px solid var(--red);color:var(--white-dim);}
+.detail-rec.upper-bound{background:rgba(78,143,170,0.1);border-left:3px solid var(--blue);color:var(--white-dim);}
+
+/* CHART BLOCKS */
+.chart-block{background:var(--bg-card);border:1px solid var(--border);padding:2rem;margin-bottom:2rem;}
+.chart-block-header{margin-bottom:1.5rem;}
+.chart-block-title{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:400;}
+.chart-block-sub{font-size:0.78rem;color:var(--white-dim);margin-top:0.2rem;}
+.chart-canvas-wrap{position:relative;}
+
+.chart-legend{display:flex;gap:1.5rem;margin-top:0.75rem;flex-wrap:wrap;}
+.cl-item{display:flex;align-items:center;gap:0.45rem;font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--white-dim);}
+.cl-dot{width:10px;height:10px;border-radius:1px;flex-shrink:0;}
+
+/* PRICING CROSSOVER */
+.crossover-grid{display:grid;grid-template-columns:2fr 1fr;gap:2rem;margin-bottom:2rem;}
+.crossover-insight{background:var(--bg-card);border:1px solid var(--border);padding:2rem;display:flex;flex-direction:column;gap:1.2rem;}
+.insight-label{font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);}
+.insight-val{font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:300;line-height:1.1;}
+.insight-val.red{color:var(--red);}
+.insight-desc{font-size:0.82rem;color:var(--white-dim);line-height:1.7;}
+
+/* RESOLUTION TABLE */
+.resolution-table{width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:0.76rem;margin-bottom:2rem;}
+.resolution-table th{padding:0.8rem 1.2rem;background:rgba(201,168,76,0.07);border-bottom:1px solid var(--border);font-size:0.62rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--gold);font-weight:400;text-align:left;}
+.resolution-table td{padding:0.9rem 1.2rem;border-bottom:1px solid var(--border-faint);}
+.resolution-table tr:hover td{background:var(--bg-light);}
+.resolution-table tr:last-child td{border-bottom:none;}
+td.excluded{color:var(--red);}
+td.shortened{color:var(--amber);}
+td.full{color:var(--green);}
+
+/* FOOTER */
+.page-footer{border-top:1px solid var(--border);max-width:1200px;margin:0 auto;padding:2rem 3.5rem;display:flex;justify-content:space-between;align-items:center;}
+.page-footer span{font-family:'DM Mono',monospace;font-size:0.62rem;color:rgba(238,234,226,0.2);letter-spacing:0.07em;}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity 0.6s ease,transform 0.6s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+@media(max-width:800px){
+  nav,header,.section,.page-footer{padding-left:1.5rem;padding-right:1.5rem;}
+  .hero{padding-left:1.5rem;padding-right:1.5rem;}
+  .tension-grid,.crossover-grid{grid-template-columns:1fr;}
+  .detail-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Subscription Cannibalization Model</div>
+  <ul class="nav-links">
+    <li><a href="#context" class="active">Context</a></li>
+    <li><a href="#matrix">Decile Matrix</a></li>
+    <li><a href="#revenue">Revenue Model</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">HP Inc. — Ink Supplies Portfolio · Analytical Framework Simulation</div>
+  <h1 class="hero-title">When <em>growth</em> cannibalizes<br>your most valuable customers</h1>
+  <div class="hero-rule"></div>
+  <p class="hero-desc">A portfolio strategy simulation modeling the tension between subscription growth objectives and transactional revenue protection in a $1.9B global ink supplies business. Built around a 10×10 customer decile matrix showing usage behavior and OEM loyalty across platform and region combinations.</p>
+  <div class="hero-nav">
+    <a href="#matrix" class="hero-btn hero-btn-primary">Explore the Matrix →</a>
+    <a href="#context" class="hero-btn hero-btn-outline">Read the Context</a>
+  </div>
+</div>
+
+<div class="disclosure-bar">
+  SIMULATION DISCLOSURE — Product, pricing, and customer data have been abstracted to protect confidentiality. The analytical framework, economic relationships, and strategic logic reflect actual work. All figures are illustrative.
+</div>
+
+<!-- SECTION 1: CONTEXT -->
+<section class="section" id="context">
+  <div class="section-eyebrow reveal">Strategic Context</div>
+  <h2 class="section-title reveal">Two business models. One customer base. Competing objectives.</h2>
+  <p class="section-lead reveal">As HP's subscription ink service expanded into developed markets, the subscription business team and the traditional supplies portfolio team were both targeting the same printer owners — but with fundamentally different incentives about which customers to pursue and how aggressively.</p>
+
+  <div class="tension-grid reveal">
+    <div class="tension-card">
+      <div class="tension-label sub">Subscription Team Objective</div>
+      <div class="tension-title">Maximize subscriber count &amp; penetration rate</div>
+      <p class="tension-body">From the subscription team's perspective, high-usage, high-loyalty customers were the ideal target. The cost-savings value proposition was strongest for heavy users, and loyal customers were less likely to churn. Leadership also preferred subscription economics — 100% OEM loyalty, predictable monthly revenue, reduced balance sheet seasonality.</p>
+      <div class="tension-metric">
+        <div><div class="t-metric-val pos">100%</div><div class="t-metric-label">OEM loyalty (subscribers)</div></div>
+        <div><div class="t-metric-val pos">Stable</div><div class="t-metric-label">Monthly recurring revenue</div></div>
+      </div>
+    </div>
+    <div class="tension-card">
+      <div class="tension-label trans">Portfolio Strategy Perspective</div>
+      <div class="tension-title">Protect the most valuable transactional customers</div>
+      <p class="tension-body">High-usage, high-loyalty customers were also the most economically valuable segment of the transactional business. Aggressively converting them to subscription would create a painful transition period — cannibalizing the highest-margin customers before subscription scale could compensate. The decile matrix made this trade-off quantifiable for the first time.</p>
+      <div class="tension-metric">
+        <div><div class="t-metric-val neg">Risk</div><div class="t-metric-label">Revenue gap during transition</div></div>
+        <div><div class="t-metric-val neg">Varies</div><div class="t-metric-label">Net value by platform/decile</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="matrix">
+  <div class="section-eyebrow reveal">The Analytical Core</div>
+  <h2 class="section-title reveal">10×10 Customer Decile Matrix</h2>
+  <p class="section-lead reveal">The matrix maps the installed customer base across two dimensions. Its development was triggered in part by the decision to eliminate the free 15-page subscription plan — a move that forced an honest accounting of which customer segments the paid plans actually served and at what revenue impact. <strong>monthly ink usage</strong> (vertical axis — how much ink a customer consumes per month, from near-zero at the bottom to heavy users at the top) and <strong>OEM loyalty</strong> (horizontal axis — what percentage of their cartridges are genuine HP vs. third-party or refilled, from lower loyalty on the left to near-100% on the right). Each cell is a customer segment. In the default Revenue Gap view, green cells are segments where HP collects <em>more</em> revenue from subscription than from trade; red cells are segments where conversion to subscription would cost HP revenue. Darker red = larger revenue loss.</p>
+
+  <div class="matrix-wrap reveal">
+    <div class="matrix-header">
+      <div>
+        <div class="matrix-title">Customer Segment Map</div>
+        <div class="matrix-subtitle">Revenue Gap view: HP subscription revenue vs. HP channel-adjusted trade revenue. Green = subscription wins; red gradient = transactional wins by increasing margin. Tier 7 Printer · US Developed Market · Illustrative.</div>
+      </div>
+      <div class="matrix-controls">
+        <button class="matrix-toggle active" onclick="setView('fit')">Revenue Gap</button>
+        <button class="matrix-toggle" onclick="setView('revenue')">Revenue Delta</button>
+        <button class="matrix-toggle" onclick="setView('usage')">Usage (cc)</button>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;margin-top:0.5rem;">
+      <div style="font-family:'DM Mono',monospace;font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;background:var(--gold-dim);border:1px solid var(--border);color:var(--gold);padding:0.4rem 1rem;display:inline-block;">
+        ↓ Click any cell to explore the segment profile
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--white-dim);letter-spacing:0.08em;">Profile panel expands below the matrix</div>
+    </div>
+
+    <div class="matrix-outer">
+      <div class="matrix-y-label">← Low Usage &nbsp;&nbsp; Monthly Ink Usage (cc/month) &nbsp;&nbsp; High Usage →</div>
+      <div class="matrix-inner">
+        <div class="matrix-x-label">OEM Loyalty (% genuine HP cartridges) →</div>
+        <div class="matrix-grid" id="matrixGrid"></div>
+        <div class="matrix-axis-row" id="axisRow"></div>
+      </div>
+    </div>
+
+    <div class="matrix-legend" id="matrixLegend"></div>
+
+    <div class="cell-detail" id="cellDetail">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:0.3rem;" id="detailLabel">—</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;" id="detailTitle">Select a cell</div>
+        </div>
+      </div>
+      <div class="detail-grid" id="detailStats"></div>
+      <div id="detailRec" class="detail-rec marginal" style="display:none;"></div>
+    </div>
+  </div>
+</section>
+
+
+
+<section class="section" id="revenue">
+  <div class="section-eyebrow reveal">Revenue Comparison</div>
+  <h2 class="section-title reveal">Annual revenue per printer unit: Transactional vs. Subscription</h2>
+  <p class="section-lead reveal">The revenue comparison tells a two-part story. For low-to-moderate usage customers (D1–D7), subscription plan prices exceed HP's 65% channel share of trade revenue — meaning subscription is actually better for HP revenue in that segment. For high-usage customers (D8–D10), the transactional model generates significantly more revenue, because high-usage customers buying large quantities of OEM cartridges at full retail price generate more HP revenue than any subscription plan priced to attract them. This created the core tension: the customers the subscription team most wanted to convert were the ones whose conversion was most costly to HP's revenue base.</p>
+
+  <!-- CHART 1: Revenue Problem — diverging bar -->
+  <div class="chart-block reveal">
+    <div class="chart-block-header">
+      <div class="chart-block-title">The Revenue Problem: HP Annual Revenue Gap by Usage Decile</div>
+      <div class="chart-block-sub">How much HP gains or loses annually per unit if a customer converts to subscription. Red = HP loses revenue (trans wins); green = HP gains revenue (sub wins). Bars = 2019 pricing; dots = post-resolution pricing. D10 bar truncated — full gap shown in tooltip. Loyalty D7 base case.</div>
+    </div>
+    <div class="chart-canvas-wrap" style="height:320px"><canvas id="revenueChart"></canvas></div>
+    <div class="chart-legend">
+      <div class="cl-item"><div class="cl-dot" style="background:rgba(194,96,96,0.75)"></div>2019: HP loses revenue on conversion (trans wins)</div>
+      <div class="cl-item"><div class="cl-dot" style="background:rgba(30,92,56,0.75)"></div>2019: HP gains revenue from subscription (sub wins)</div>
+      <div class="cl-item"><div class="cl-dot" style="background:#4e8faa;border-radius:50%;width:8px;height:8px"></div>Post-resolution value</div>
+    </div>
+  </div>
+
+  <!-- CHART 2: Pricing Fix -->
+  <div class="chart-block reveal">
+    <div class="chart-block-header">
+      <div class="chart-block-title">The Pricing Fix: Plan Prices vs. HP Break-Even by Plan Tier</div>
+      <div class="chart-block-sub">Break-even = HP's 65% channel share of trade revenue for the typical customer on each plan. Below the green line = HP undercharges vs. trade equivalent. Tooltip shows customer savings vs. trade retail.</div>
+    </div>
+    <div class="chart-canvas-wrap" style="height:300px"><canvas id="deltaChart"></canvas></div>
+    <div class="chart-legend">
+      <div class="cl-item"><div class="cl-dot" style="background:rgba(194,96,96,0.6)"></div>2019 Plan Price</div>
+      <div class="cl-item"><div class="cl-dot" style="background:rgba(201,168,76,0.7)"></div>Post-Resolution Plan Price</div>
+      <div class="cl-item"><div class="cl-dot" style="background:#5a9e72"></div>Break-Even Threshold — line</div>
+    </div>
+  </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-top:1.5rem;">
+      <div style="background:var(--bg-card);padding:1.2rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--green);margin-bottom:0.4rem;">Zone 1 — D1–D7</div>
+        <div style="font-size:0.82rem;font-weight:500;margin-bottom:0.3rem;">HP Wins — Sub Revenue Exceeds Trade</div>
+        <div style="font-size:0.76rem;color:var(--white-dim);line-height:1.65;">With the $0.99 entry plan (15pp), HP collects more from subscription than from the equivalent trade channel share for D1–D6. The 50pp plan at $2.99 covers D7 near break-even. These low-to-moderate usage customers are better for HP in subscription — not a primary targeting priority, but not harmful to convert.</div>
+      </div>
+      <div style="background:var(--bg-card);padding:1.2rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--red);margin-bottom:0.4rem;">Zone 2 — D8 (85pp)</div>
+        <div style="font-size:0.82rem;font-weight:500;margin-bottom:0.3rem;">2019 Gap — Resolved by Price Increase</div>
+        <div style="font-size:0.76rem;color:var(--white-dim);line-height:1.65;">At 2019 pricing, the 100pp plan at $4.99 falls $0.86/month short of HP's trade revenue equivalent. The post-resolution increase to $6.49 closes this gap and puts HP ahead by $0.64/month. Strong subscription value prop for the customer; viable for HP post-resolution.</div>
+      </div>
+      <div style="background:var(--bg-card);padding:1.2rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--red);margin-bottom:0.4rem;">Zone 3 — D9 (175pp)</div>
+        <div style="font-size:0.82rem;font-weight:500;margin-bottom:0.3rem;">2019 Gap — Resolved by Price Increase</div>
+        <div style="font-size:0.76rem;color:var(--white-dim);line-height:1.65;">At 2019 pricing, the 100pp plan with overages falls $2.16/month short of HP's trade revenue equivalent. The post-resolution 100pp plan at $6.49 with higher overage rates closes the gap. These are prime cannibalization risk customers — high usage, high value in trade — making the price increase critical before targeting them.</div>
+      </div>
+      <div style="background:var(--bg-card);padding:1.2rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:0.4rem;">Zone 4 — D10 (280pp)</div>
+        <div style="font-size:0.82rem;font-weight:500;margin-bottom:0.3rem;">Structural Mismatch — Outside Scope of This Analysis</div>
+        <div style="font-size:0.76rem;color:var(--white-dim);line-height:1.65;">Very heavy users on entry-class hardware with a $175/yr revenue gap that plan price increases alone cannot close. Poor OEM loyalty (~89%) reflects cost pressure already pushing these customers toward aftermarket ink — a further signal that the printer class is wrong for the use case. A potential next step identified but not implemented: restricting the 300pp plan to Officejet printers (a platform with a lower cost-per-page configuration better suited to this usage level), which would signal to D10 customers that an upgrade is the appropriate path rather than a higher-tier subscription plan.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+<div class="disclosure-bar" style="margin-bottom:0;">
+  SIMULATION DISCLOSURE — All figures, pricing, and customer data presented in this model are illustrative and have been abstracted from actual HP Inc. data to protect confidentiality. The analytical framework, strategic logic, and economic relationships reflect actual work performed. This is not HP Inc. proprietary information.
+</div>
+
+<footer class="page-footer">
+  <span>Subscription Cannibalization Model — Analytical Framework Simulation</span>
+  <span>chrisacannon.github.io</span>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────
+// DATA MODEL
+// ─────────────────────────────────────────────
+
+const BLACK_CC_PER_CART = 3.11;
+const COLOR_CC_PER_CART = 2.6;
+const BLACK_PAGES_PER_CART = 120;
+const COLOR_PAGES_PER_CART = 100;
+const BLACK_PRICE = 13;
+const COLOR_PRICE = 15;
+
+// 2019 subscription plan pricing — paid plans only
+// Free tier (15pp free) treated as already eliminated prior to this analysis
+// as an early-stage decision. Remaining analysis focuses on paid plan pricing.
+// 2019 plan pricing — $0.99 entry tier replaces free plan (early resolution decision)
+const II_PLANS = [
+  { pages: 15,  price: 0.99 },   // entry tier — replaced free plan as early decision
+  { pages: 50,  price: 2.99 },
+  { pages: 100, price: 4.99 },
+  { pages: 300, price: 9.99 },
+  { pages: 700, price: 19.99 },
+];
+const OVERAGE_BLOCK = 15;  // 2019: $1.00 per 15-page block
+
+// Post-resolution plan prices
+const II_PLANS_POST = [
+  { pages: 15,  price: 0.99 },   // entry tier unchanged
+  { pages: 50,  price: 3.49 },
+  { pages: 100, price: 6.49 },
+  { pages: 300, price: 12.99 },
+  { pages: 700, price: 22.99 },
+];
+const OVERAGE_BLOCK_POST = 15; // $1.25 per 15-page block post-resolution
+
+// HP channel economics
+const HP_CHANNEL_SHARE = 0.65; // HP receives 65% of trade retail price (35% to channel)
+
+function pagesForUsageDecile(d) {
+  // D8-D10 set explicitly to place on meaningful paid plan tiers
+  // D10 (280pp) = structural mismatch zone: wrong printer class for this usage level
+  if (d === 8) return 85;
+  if (d === 9) return 175;
+  if (d === 10) return 280;
+  // D1-D7: exponential curve from ~1pp to ~30pp
+  return 0.8 * Math.pow(30 / 0.8, (d - 1) / 6);
+}
+
+function blackRatio(d) {
+  return 0.90 - (d - 1) * (0.25 / 9);
+}
+
+// Loyalty distribution: mean ~93.5%, range 60-99%
+// Right-skewed: most customers cluster 90-99%, small tail down to 60%
+// Reflects actual US developed market OEM loyalty of ~94% aggregate
+const AM_SHARE_BY_DECILE = [0.60, 0.80, 0.89, 0.92, 0.935, 0.945, 0.955, 0.965, 0.975, 0.99];
+
+function amShareForLoyaltyDecile(loyaltyDecile, usageDecile) {
+  const base = AM_SHARE_BY_DECILE[loyaltyDecile - 1];
+  // Heavy users (u=9,10) skew slightly lower loyalty — TCO gap is widest there
+  if (usageDecile >= 9) return Math.max(base - 0.04, 0.60);
+  if (usageDecile >= 8) return Math.max(base - 0.02, 0.60);
+  return base;
+}
+
+function monthlyCC(usageDecile) {
+  const pages = pagesForUsageDecile(usageDecile);
+  const bPages = pages * blackRatio(usageDecile);
+  const cPages = pages * (1 - blackRatio(usageDecile));
+  const bCC = (bPages / BLACK_PAGES_PER_CART) * BLACK_CC_PER_CART;
+  const cCC = (cPages / COLOR_PAGES_PER_CART) * COLOR_CC_PER_CART;
+  return { black: bCC, color: cCC, total: bCC + cCC, pages };
+}
+
+// XL cartridge pricing (higher usage customers buy XL for cost savings)
+const BLACK_XL_PAGES = 240, BLACK_XL_PRICE = 23;
+const COLOR_XL_PAGES = 200, COLOR_XL_PRICE = 26;
+
+function tradeMonthlyCost(usageDecile) {
+  const { black, color } = monthlyCC(usageDecile);
+  // Deciles 1-5: standard cartridges; Deciles 6-10: XL cartridges
+  if (usageDecile <= 5) {
+    const bCarts = black / BLACK_CC_PER_CART;
+    const cCarts = color / COLOR_CC_PER_CART;
+    return bCarts * BLACK_PRICE + cCarts * COLOR_PRICE;
+  } else {
+    const bCartsCost = (black / BLACK_CC_PER_CART) * (BLACK_XL_PRICE / (BLACK_XL_PAGES / BLACK_PAGES_PER_CART));
+    const cCartsCost = (color / COLOR_CC_PER_CART) * (COLOR_XL_PRICE / (COLOR_XL_PAGES / COLOR_PAGES_PER_CART));
+    return bCartsCost + cCartsCost;
+  }
+}
+
+function cartridgeType(usageDecile) { return usageDecile <= 5 ? 'Standard' : 'XL'; }
+
+function bestSubPlan(pages, plans, overageRate) {
+  plans = plans || II_PLANS;
+  overageRate = overageRate || 1.00;
+  let best = Infinity;
+  for (const plan of plans) {
+    let cost = plan.price;
+    if (pages > plan.pages) cost += Math.ceil((pages - plan.pages) / 15) * overageRate;
+    best = Math.min(best, cost);
+  }
+  return best;
+}
+
+function subAnnualPost(usageDecile) {
+  return bestSubPlan(pagesForUsageDecile(usageDecile), II_PLANS_POST, 1.25) * 12;
+}
+
+function hpTradeRevenue(u) { return tradeMonthlyCost(u) * HP_CHANNEL_SHARE; }
+
+function transAnnualRevenue(usageDecile, loyaltyDecile) {
+  const amShare = amShareForLoyaltyDecile(loyaltyDecile, usageDecile);
+  const { black, color } = monthlyCC(usageDecile);
+  const bCarts = black / BLACK_CC_PER_CART;
+  const cCarts = color / COLOR_CC_PER_CART;
+  return (bCarts * BLACK_PRICE + cCarts * COLOR_PRICE) * amShare * 12;
+}
+
+function subAnnualRevenue(usageDecile) {
+  const { pages } = monthlyCC(usageDecile);
+  return bestSubPlan(pages) * 12;
+}
+
+// ─────────────────────────────────────────────
+// MATRIX
+// ─────────────────────────────────────────────
+
+let currentView = 'fit';
+let selectedCell = null;
+
+
+function cellColorFit(u, l) {
+  // Primary signal: transactional annual revenue minus subscription annual revenue
+  // Decision boundary zone: ±$5 — plan pricing changes easily shift this segment
+  const delta = transAnnualRevenue(u, l) - subAnnualRevenue(u);
+
+  if (delta < -5)   return '#1e5c38';   // Sub wins clearly — HP better off
+  if (delta < 5)    return '#2d7a48';   // Decision boundary (±$5)
+  if (delta < 50)   return '#c26040';   // Moderate risk — trans wins $5–50/yr
+  if (delta < 150)  return '#8f3a20';   // High risk — trans wins $50–150/yr
+  return '#6b1a1a';                      // Structural mismatch — trans wins $150+/yr
+}
+
+// isBetter: true when subscription plan costs customer less than trade cartridges
+function subCheaperForCustomer(u) {
+  const pages = pagesForUsageDecile(u);
+  return bestSubPlan(pages, II_PLANS, 1.00) < tradeMonthlyCost(u);
+}
+// subWinsRevenue: true when HP collects more from subscription than trade channel share
+function subWinsRevenue(u, l) {
+  return subAnnualRevenue(u) > transAnnualRevenue(u, l);
+}
+
+function buildMatrix() {
+  const grid = document.getElementById('matrixGrid');
+  const axisRow = document.getElementById('axisRow');
+  grid.innerHTML = '';
+  axisRow.innerHTML = '';
+
+  // Build rows: usage decile 10 at top (row 1 in grid), 1 at bottom
+  for (let u = 10; u >= 1; u--) {
+    for (let l = 1; l <= 10; l++) {
+      const cell = document.createElement('div');
+      cell.className = 'matrix-cell';
+      cell.dataset.u = u;
+      cell.dataset.l = l;
+
+      let bg;
+      if (currentView === 'fit') bg = cellColorFit(u, l);
+      else if (currentView === 'revenue') {
+        // delta = trans - sub: positive = trans wins = cannibalization risk (same sign as fit view)
+        const delta = transAnnualRevenue(u, l) - subAnnualRevenue(u);
+        if (delta < -5)  bg = '#1e5c38';   // sub wins clearly
+        else if (delta < 5)   bg = '#2d7a48';   // near parity ±$5
+        else if (delta < 50)  bg = '#c26040';   // moderate risk
+        else if (delta < 150) bg = '#8f3a20';   // high risk
+        else bg = '#6b1a1a';                     // structural mismatch
+      } else {
+        // Log scale: cc values range 0.02–7.27, log scale gives better visual spread
+        const { total } = monthlyCC(u);
+        const logMin = Math.log(0.02), logMax = Math.log(7.27);
+        const intensity = Math.max(0, Math.min(1, (Math.log(Math.max(total,0.02)) - logMin) / (logMax - logMin)));
+        const r = Math.round(20 + intensity * 180);
+        const g = Math.round(30 + intensity * 80);
+        const b = Math.round(80 - intensity * 40);
+        bg = `rgb(${r},${g},${b})`;
+      }
+
+      cell.style.background = bg;
+      cell.title = `Usage D${u} × Loyalty D${l}`;
+      cell.addEventListener('click', () => showCellDetail(u, l, cell));
+      grid.appendChild(cell);
+    }
+  }
+
+  // Axis ticks
+  for (let l = 1; l <= 10; l++) {
+    const tick = document.createElement('div');
+    tick.className = 'axis-tick';
+    const amVals = [60, 80, 89, 92, 93.5, 94.5, 95.5, 96.5, 97.5, 99];
+    tick.textContent = amVals[l-1] + '%';
+    axisRow.appendChild(tick);
+  }
+}
+
+function updateLegend(view) {
+  const el = document.getElementById('matrixLegend');
+  if (!el) return;
+  const legends = {
+    fit: [
+      { color: '#1e5c38', label: 'Sub Wins Clearly — HP collects more from subscription than trade channel share (delta < −$5/yr)' },
+      { color: '#2d7a48', label: 'Decision Boundary — sub and trans within $5/yr; plan pricing shifts this segment' },
+      { color: '#c26040', label: 'Moderate-to-High Risk — Trans wins $5–$50/yr; plan price increases needed before targeting' },
+      { color: '#8f3a20', label: 'High Risk — Trans wins $50–$150/yr (D8–D9, high loyalty)' },
+      { color: '#6b1a1a', label: 'Structural Mismatch — Trans wins $150+/yr; unresolved at D10' },
+    ],
+    revenue: [
+      { color: '#1e5c38', label: 'Sub Wins Clearly — subscription revenue exceeds transactional (delta < −$5/yr)' },
+      { color: '#2d7a48', label: 'Decision Boundary — sub and trans within $5/yr' },
+      { color: '#c26040', label: 'Moderate-to-High Risk — Trans wins $5–$50/yr' },
+      { color: '#8f3a20', label: 'High Risk — Trans wins $50–$150/yr' },
+      { color: '#6b1a1a', label: 'Structural Mismatch — Trans wins $150+/yr' },
+    ],
+    usage: [
+      { color: 'rgb(20,30,80)', label: 'Very low usage (~1pp/month, ~0.02 cc/mo) — D1–D2' },
+      { color: 'rgb(60,50,75)', label: 'Low usage (~3–9pp/month, ~0.07–0.23 cc/mo) — D3–D5' },
+      { color: 'rgb(120,80,70)', label: 'Moderate usage (~16–30pp/month, ~0.43–0.78 cc/mo) — D6–D7' },
+      { color: 'rgb(170,110,65)', label: 'High usage (~85pp/month, ~2.2 cc/mo) — D8' },
+      { color: 'rgb(200,150,40)', label: 'Very high usage (~175–280pp/month, ~4.5–7.3 cc/mo) — D9–D10' },
+    ]
+  };
+  const items = legends[view] || legends.fit;
+  el.innerHTML = items.map(item =>
+    `<div class="legend-item"><div class="legend-swatch" style="background:${item.color}"></div>${item.label}</div>`
+  ).join('');
+}
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.matrix-toggle').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  buildMatrix();
+  updateLegend(v);
+  if (selectedCell) {
+    const u = parseInt(selectedCell.dataset.u);
+    const l = parseInt(selectedCell.dataset.l);
+    showCellDetail(u, l, selectedCell);
+  }
+}
+
+
+// ─────────────────────────────────────────────
+// CELL DETAIL
+// ─────────────────────────────────────────────
+
+function showCellDetail(u, l, cellEl) {
+  if (selectedCell) selectedCell.classList.remove('selected');
+  selectedCell = cellEl;
+  cellEl.classList.add('selected');
+
+  const pages = pagesForUsageDecile(u);
+  const { black, color, total } = monthlyCC(u);
+  const am = amShareForLoyaltyDecile(l, u);
+  const tradeCost = tradeMonthlyCost(u);
+  const subCost2019 = bestSubPlan(pages, II_PLANS, 1.00);
+  const subCostPost = bestSubPlan(pages, II_PLANS_POST, 1.25);
+
+  // Sub plan breakdown: base price + overages
+  function subBreakdown(pages, plans, ov) {
+    let best = Infinity, bestP = null;
+    for (const p of plans) {
+      let c = p.price + (pages > p.pages ? Math.ceil((pages - p.pages) / 15) * ov : 0);
+      if (c < best) { best = c; bestP = p; }
+    }
+    const ovCost = pages > bestP.pages ? Math.ceil((pages - bestP.pages) / 15) * ov : 0;
+    return { base: bestP.price, overages: ovCost, total: best, plan: bestP.pages };
+  }
+  const bd2019 = subBreakdown(pages, II_PLANS, 1.00);
+  const transAnn = transAnnualRevenue(u, l);
+  const subAnn = subAnnualRevenue(u);
+  const revDelta = transAnn - subAnn; // positive = trans wins
+  const customerSaves = subCost2019 < tradeCost;
+  const hpWinsSub = subAnn > transAnn;
+
+  document.getElementById('detailLabel').textContent = `Usage Decile ${u} × Loyalty Decile ${l}`;
+  document.getElementById('detailTitle').textContent = `${pages.toFixed(0)} pages/mo · ${(am*100).toFixed(0)}% OEM loyalty · ${total.toFixed(2)} cc/month total · ${u <= 5 ? 'Standard' : 'XL'} cartridges`;
+
+  const stats = document.getElementById('detailStats');
+  const hpTradeRev = tradeCost * 0.65; // HP's 65% channel share of retail
+  stats.innerHTML = `
+    <div>
+      <div class="detail-stat-val">$${tradeCost.toFixed(2)}</div>
+      <div class="detail-stat-label">Trade retail cost/month</div>
+    </div>
+    <div>
+      <div class="detail-stat-val">$${hpTradeRev.toFixed(2)}</div>
+      <div class="detail-stat-label">HP trade revenue/month (65% channel share)</div>
+    </div>
+    <div>
+      <div class="detail-stat-val ${customerSaves ? 'pos' : 'neg'}">$${subCost2019.toFixed(2)}</div>
+      <div class="detail-stat-label">Sub plan/month (2019) — ${bd2019.plan}pp plan $${bd2019.base.toFixed(2)}${bd2019.overages > 0 ? ` + $${bd2019.overages.toFixed(2)} overages` : ''} — customer ${customerSaves ? 'saves' : 'overpays'}</div>
+    </div>
+    <div>
+      <div class="detail-stat-val ${revDelta > 0 ? 'neg' : 'pos'}">$${revDelta > 0 ? '-' : '+'}${Math.abs(revDelta).toFixed(2)}</div>
+      <div class="detail-stat-label">HP annual revenue impact if converted</div>
+    </div>
+  `;
+
+  const rec = document.getElementById('detailRec');
+  rec.style.display = 'block';
+
+  if (revDelta < -5) {  // Sub wins clearly
+    if (u <= 5) {
+      rec.className = 'detail-rec good';
+      rec.textContent = `Low Usage — HP Revenue Positive: At ${pages.toFixed(0)} pages/month, the $0.99 entry plan generates more HP revenue than the equivalent transactional channel share ($${(tradeCost*0.65).toFixed(2)}/month). The customer ${customerSaves ? 'saves vs. trade' : 'pays slightly above trade'}. Not a primary targeting priority — but conversions here are not harmful to HP revenue.`;
+    } else {
+      rec.className = 'detail-rec good';
+      rec.textContent = `Subscription Revenue Positive: Converting this segment (${pages.toFixed(0)} pages/mo, ${(am*100).toFixed(0)}% OEM loyalty) adds $${Math.abs(revDelta).toFixed(0)}/year to HP revenue vs. the transactional channel-share equivalent. Customer ${customerSaves ? `saves $${(tradeCost - subCost2019).toFixed(2)}/month vs. trade — strong value prop` : 'pays marginally above trade — convenience argument applies'}. Viable subscription target.`;
+    }
+  } else if (revDelta < 5) {
+    rec.className = 'detail-rec marginal';
+    rec.textContent = `Decision Boundary: HP loses $${revDelta.toFixed(0)}/year if this customer converts at 2019 pricing. The gap is modest — post-resolution pricing ($${subCostPost.toFixed(2)}/month) ${subCostPost * 12 >= transAnn ? 'closes it' : 'reduces but does not close it'}. Customer ${customerSaves ? `saves $${(tradeCost - subCost2019).toFixed(2)}/month` : 'pays slightly above trade'}. Do not aggressively target at 2019 pricing; monitor post-resolution.`;
+  } else if (revDelta < 150) {
+    rec.className = 'detail-rec poor';
+    rec.textContent = `Moderate-to-High Cannibalization Risk: Converting this segment (${pages.toFixed(0)} pages/mo, ${(am*100).toFixed(0)}% OEM loyalty) costs HP $${revDelta.toFixed(0)}/year per unit at 2019 pricing. Post-resolution pricing ($${subCostPost.toFixed(2)}/month) ${subCostPost*12 >= transAnn ? 'closes the gap' : 'reduces but does not fully close the gap'}. These are relatively high-value transactional customers — subscription targeting should wait for price adjustments.`;
+  } else {
+    rec.className = 'detail-rec poor';
+    rec.textContent = `Structural Mismatch — Product Routing Problem: At ${pages.toFixed(0)} pages/month, this customer's usage behavior is better suited to a higher-tier printer platform (e.g. Officejet) with a lower cost-per-page configuration. The $${revDelta.toFixed(2)}/year revenue gap is too large to close with plan price increases alone. One strategic option considered: restricting the 300pp subscription plan to Officejet printers, which would signal to these customers that upgrading to a better-fit platform is the right path. Poor OEM loyalty (${(am*100).toFixed(0)}%) reflects the cost pressure already pushing these customers toward aftermarket ink — a further indicator that the printer class is wrong for the use case.`;
+  }
+
+  document.getElementById('cellDetail').className = 'cell-detail visible';
+}
+
+// ─────────────────────────────────────────────
+// CHARTS
+// ─────────────────────────────────────────────
+
+Chart.defaults.color = 'rgba(238,234,226,0.45)';
+Chart.defaults.borderColor = 'rgba(201,168,76,0.1)';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 11;
+
+const deciles = [1,2,3,4,5,6,7,8,9,10];
+
+
+// ── CHART 1: Revenue Problem — diverging single bar + dot markers ──
+const decileLabelsRev = deciles.map(d => `D${d} (${pagesForUsageDecile(d).toFixed(0)}pp)`);
+const gapBase  = deciles.map(u => transAnnualRevenue(u, 7) - subAnnualRevenue(u));
+const gapWorst = deciles.map(u => transAnnualRevenue(u, 5) - subAnnualRevenue(u));
+const gapBest  = deciles.map(u => transAnnualRevenue(u, 9) - subAnnualRevenue(u));
+const gapPost  = deciles.map(u => transAnnualRevenue(u, 7) - subAnnualPost(u));
+const Y_CAP = 100; // cap at $100 to keep D7-D9 readable; D10 annotated
+
+// Custom plugin: draw post-resolution dots and D10 overflow annotation
+const dotPlugin = {
+  id: 'postResDots',
+  afterDatasetsDraw(chart) {
+    const { ctx, scales } = chart;
+    if (!scales.x || !scales.y) return;
+    ctx.save();
+    gapPost.forEach((v, i) => {
+      const x = scales.x.getPixelForValue(i);
+      const capped = Math.max(Math.min(v, Y_CAP), -Y_CAP);
+      const y = scales.y.getPixelForValue(capped);
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#4e8faa';
+      ctx.fill();
+      ctx.strokeStyle = '#0e1018';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    // D10 overflow annotation
+    const d10x = scales.x.getPixelForValue(9);
+    ctx.fillStyle = 'rgba(194,96,96,0.85)';
+    ctx.font = "bold 10px 'DM Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText('$211', d10x, scales.y.getPixelForValue(Y_CAP) + 14);
+    ctx.fillStyle = 'rgba(78,143,168,0.85)';
+    ctx.fillText('$176↓', d10x, scales.y.getPixelForValue(Y_CAP) + 26);
+    ctx.restore();
+  }
+};
+
+new Chart(document.getElementById('revenueChart').getContext('2d'), {
+  type: 'bar',
+  plugins: [dotPlugin],
+  data: {
+    labels: decileLabelsRev,
+    datasets: [{
+      label: 'HP Revenue Gap (2019)',
+      data: gapBase.map(v => Math.max(Math.min(v, Y_CAP), -Y_CAP)),
+      backgroundColor: gapBase.map(v => v > 0 ? 'rgba(194,96,96,0.75)' : 'rgba(30,92,56,0.75)'),
+      borderColor: gapBase.map(v => v > 0 ? '#c26060' : '#1e5c38'),
+      borderWidth: 1,
+      barPercentage: 0.6,
+      categoryPercentage: 0.8
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0e1018', borderColor: 'rgba(201,168,76,0.3)', borderWidth: 1, padding: 12,
+        callbacks: {
+          label: ctx => {
+            const u = ctx.dataIndex + 1;
+            const v = gapBase[u-1];
+            return ` 2019: ${v > 0 ? 'Trans wins' : 'Sub wins'} by $${Math.abs(v).toFixed(2)}/yr`;
+          },
+          afterLabel: ctx => {
+            const u = ctx.dataIndex + 1;
+            const vPost = gapPost[u-1];
+            return ` Post: ${vPost > 0 ? 'Trans wins' : 'Sub wins'} by $${Math.abs(vPost).toFixed(2)}/yr`;
+          },
+          afterBody: items => {
+            const u = items[0].dataIndex + 1;
+            const lo = Math.min(gapWorst[u-1], gapBest[u-1]);
+            const hi = Math.max(gapWorst[u-1], gapBest[u-1]);
+            return [`Loyalty D5–D9 range: $${lo.toFixed(0)} to $${hi.toFixed(0)}/yr`];
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: 'rgba(238,234,226,0.4)', maxRotation: 30 } },
+      y: {
+        min: -15, max: Y_CAP,
+        grid: { color: 'rgba(201,168,76,0.07)' },
+        ticks: { color: 'rgba(238,234,226,0.4)', callback: v => (v > 0 ? '+' : '') + '$' + v },
+        title: { display: true, text: 'Annual Gap (Trans − Sub) per Unit', color: 'rgba(238,234,226,0.3)', font: { size: 10 } }
+      }
+    }
+  }
+});
+
+// ── CHART 2: Pricing Fix — grouped bars + break-even line ──
+const planLabels   = ['15pp', '50pp', '100pp', '300pp', '700pp'];
+const prices2019   = [0.99,  2.99,  4.99,   9.99,   19.99];
+const pricesPost   = [0.99,  3.49,  6.49,   12.99,  22.99];
+// Break-even = HP 65% channel share for typical customer on each plan
+const typicalUsers = [4, 6, 8, 9, 10];
+const breakEvens   = typicalUsers.map(u => hpTradeRevenue(u));
+// Customer savings vs trade retail at 2019 pricing (positive = saves)
+const custSave2019 = typicalUsers.map((u,i) => tradeMonthlyCost(u) - prices2019[i]);
+const custSavePost = typicalUsers.map((u,i) => tradeMonthlyCost(u) - pricesPost[i]);
+
+new Chart(document.getElementById('deltaChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: planLabels,
+    datasets: [
+      {
+        label: '2019 Plan Price',
+        data: prices2019,
+        backgroundColor: 'rgba(194,96,96,0.6)',
+        borderColor: '#c26060',
+        borderWidth: 1,
+        barPercentage: 0.4,
+        categoryPercentage: 0.85,
+        order: 2
+      },
+      {
+        label: 'Post-Resolution Price',
+        data: pricesPost,
+        backgroundColor: 'rgba(201,168,76,0.65)',
+        borderColor: '#c9a84c',
+        borderWidth: 1,
+        barPercentage: 0.4,
+        categoryPercentage: 0.85,
+        order: 2
+      },
+      {
+        label: 'Break-Even Threshold',
+        data: breakEvens,
+        type: 'line',
+        borderColor: '#5a9e72',
+        backgroundColor: 'transparent',
+        borderWidth: 2.5,
+        pointRadius: 6,
+        pointBackgroundColor: '#5a9e72',
+        pointStyle: 'circle',
+        tension: 0,
+        order: 1
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true, position: 'top',
+        labels: { boxWidth: 12, padding: 16, color: 'rgba(238,234,226,0.55)', font: { size: 10, family: "'DM Mono', monospace" } }
+      },
+      tooltip: {
+        backgroundColor: '#0e1018', borderColor: 'rgba(201,168,76,0.3)', borderWidth: 1, padding: 12,
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: $${ctx.raw.toFixed(2)}/mo`,
+          afterBody: items => {
+            const i = items[0].dataIndex;
+            const s19 = custSave2019[i], sPost = custSavePost[i];
+            const be = breakEvens[i];
+            const gap19 = prices2019[i] - be;
+            const gapPost = pricesPost[i] - be;
+            return [
+              `Break-even: $${be.toFixed(2)}/mo (HP 65% of trade)`,
+              `2019: ${gap19 > 0 ? 'Above' : 'Below'} break-even by $${Math.abs(gap19).toFixed(2)}/mo`,
+              `Post: ${gapPost > 0 ? 'Above' : 'Below'} break-even by $${Math.abs(gapPost).toFixed(2)}/mo`,
+              `Customer: ${s19 >= 0 ? 'saves' : 'overpays'} $${Math.abs(s19).toFixed(2)}/mo vs trade (2019)`
+            ];
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: 'rgba(238,234,226,0.4)' } },
+      y: {
+        grid: { color: 'rgba(201,168,76,0.07)' },
+        ticks: { color: 'rgba(238,234,226,0.4)', callback: v => '$' + v.toFixed(2) },
+        title: { display: true, text: 'Monthly Price / Revenue ($)', color: 'rgba(238,234,226,0.3)', font: { size: 10 } }
+      }
+    }
+  }
+});
+
+
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+buildMatrix();
+updateLegend('fit');
+
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) setTimeout(() => entry.target.classList.add('visible'), i * 80);
+  });
+}, { threshold: 0.08 });
+reveals.forEach(el => observer.observe(el));
+
+// Nav active state
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 200) current = s.id; });
+  navLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+});
+</script>
+</body>
+</html>
